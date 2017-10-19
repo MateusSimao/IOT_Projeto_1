@@ -31,8 +31,13 @@ void callback(char *topic, byte *payload, unsigned int length)
   Serial.println(topic);
 
   if(strcmp("mensagem", topic) == 0){
-    Serial.println('a');
-    for(pos = 90; pos > 1; pos--)
+    for(pos = 0; pos < 90; pos++)
+    {
+      s.write(pos);
+      delay(15);
+    }
+    delay(1000);
+    for(pos = 90; pos >= 0; pos--)
     {
       s.write(pos);
       delay(15);
@@ -68,7 +73,7 @@ void setup()
 {
   //Servo
   s.attach(6);
-  //s.write(0);
+  s.write(0);
   
   Serial.begin(9600);
   Serial.println("Iniciando...");
