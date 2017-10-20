@@ -5,58 +5,42 @@
 #include <utility/logging.h>
 #include <PubSubClient.h>
 #include <Servo.h>
-
-
 // ==========================================================================
-// INICIO: ESCOPO DAS VARIAVEIS
-byte mac[] = {0xDE, 0xED, 0xBA, 0xFE, 0xF1, 0x62};                   // Definindo a variavel que recebe o mac address.
-void callback(char *topic, byte *payload, unsigned int length);      // Definindo a variavel que recebe o cabeçalho da função callback
-int pos;                                                             // Posição Servo
-Servo s;                                                             // Variável Servo
-EthernetClient ethClient;                                            // Definindo a variavel que recebe o cliente internet
-PubSubClient client("m10.cloudmqtt.com", 16815, callback, ethClient);// Dados do MQTT Cloud
-int ledAzul     = 5;
-int ledVermelho = 3;
-int ledVerde    = 4;
+byte mac[] = {0xDE, 0xED, 0xBA, 0xFE, 0xF1, 0x62};                                     // Definindo a variavel que recebe o mac address.
+void callback(char *topic, byte *payload, unsigned int length);                        // Definindo o cabeçalho da função callback
+void ligaDesligaLedDigital(int porta, int acao, int atraso = 0, bool inverso = false);
 
+Servo s;                                                              // Variável Servo
+EthernetClient ethClient;                                             // Definindo a variavel que recebe o cliente internet
+PubSubClient client("m10.cloudmqtt.com", 16815, callback, ethClient); // Dados do MQTT Cloud
+
+int portaMotorServo = 6;
+int ledAzul         = 5; // Definindo a porta do led rgb azul
+int ledVermelho     = 3; // Definindo a porta do led rgb vermelho
+int ledVerde        = 4; // Definindo a porta do led rgb verde
+
+int pos;
 // ==========================================================================
-// INICIO: ESCOPO DAS FUNCOES
-/** 
- * Funcçao que irá receber o retorno do servidor. 
- */
+// Funçao que irá receber o retorno do servidor, e tratara as mensagens do topico 
 void callback(char *topic, byte *payload, unsigned int length)
 {
   char c = payload;
   Serial.println(c);
   Serial.println(topic);
 
-  if(strcmp("mensagem", topic) == 0){
-    for(pos = 0; pos < 90; pos++)
-    {
-      s.write(pos);
-      delay(15);
-    }
-    delay(1000);
-    for(pos = 90; pos >= 0; pos--)
-    {
-      s.write(pos);
-      delay(15);
-    }
-  }
+  // Desligando os leds azul e vermelho, caso algum esteja ligado, e piscando o verde
+  // quando recebe alguma informação do MQTT
+  desligaLedsRGB(ledAzul, ledVermelho);
+  ligaDesligaLedDigital(ledVerde, LOW, 200, true); // piscar o led
+  
+  //verificaMesagem(topic);
 
   byte *p = (byte *)malloc(length);
   memcpy(p, payload, length);
   free(p);
 }
 
-/**
- * Descrição     = Função para desligar ou ligar um led em portas digitais.
- * param porta   = Receberá a porta do led que a função irá trablhar.
- * param acao    = Receberá a ação de desligar ou ligar o led, por exemplo, HIGH para ligar ou LOW para desligar.
- * param atraso  = Receberá o delay, caso seja nessessario, caso contrario só executara a ação.
- * param inverso = Receberá true caso queira que ele faça o inverso da primeira acao,delay obrigatorio.
- * exemplo       = ligaDesligaLed(13, HIGH, 1000) irá ligar o led e deixando com um delay de 1 segundo para a proxima ação
- */
+// Função para desligar ou ligar um led em portas digitais, com delay e opção inversa.
 void ligaDesligaLedDigital(int porta, int acao, int atraso = 0, bool inverso = false) {
   pinMode(porta, OUTPUT);
   digitalWrite(porta, acao);
@@ -69,16 +53,33 @@ void ligaDesligaLedDigital(int porta, int acao, int atraso = 0, bool inverso = f
   }
 }
 
+// Função para desligar duas cores do rgb
+void desligaLedsRGB(int param1, int param2) {
+  digitalWrite(param1, LOW);
+  digitalWrite(param2, LOW);
+}
+
+// Função que irá verificar a mensagem e topico digitado e tomas as devidas ações
+void verificaMesagem(char topic) {
+  if (strcmp("Mensagem", topic) == 0) {
+    
+  }
+}
+// ==========================================================================
 void setup()
 {
-  //Servo
-  s.attach(6);
-  s.write(0);
-  
+  // setup do motor servo
+  s.attach(portaMotorServo);
+  s.write(30);
+
+  // setup do serial
   Serial.begin(9600);
+
+  // iniciando a conexão
   Serial.println("Iniciando...");
   ligaDesligaLedDigital(ledAzul, HIGH);
-  Ethernet.begin(mac);  
+  Ethernet.begin(mac);
+
   // Faz a conexão no cloud com nome do dispositivo, usuário e senha respectivamente
   if (client.connect("arduino", "test", "test"))
   {
@@ -88,21 +89,19 @@ void setup()
     // Envia uma mensagem para o cloud no topic portao
     client.publish("mensagem", 1);
 
-    // Conecta no topic para receber mensagens
+    // Conectando nos topics para receber as mensagens
     client.subscribe("mensagem");
     
     Serial.println("conectado Temperatura");
   }else{
-    ligaDesligaLedDigital(ledAzul, LOW);
-    ligaDesligaLedDigital(ledVerde, LOW);
+    desligaLedsRGB(ledAzul, ledVerde);
     ligaDesligaLedDigital(ledVermelho, HIGH);
     Serial.println("erro ao conectar");  
   }
   
 }
-
+// ==========================================================================
 void loop()
 {
-  client.loop();
-  
+  client.loop(); 
 }
