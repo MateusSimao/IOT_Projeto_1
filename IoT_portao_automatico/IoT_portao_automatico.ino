@@ -22,6 +22,7 @@ int ledVermelho     = 5;
 int portaBotao      = 6;
 int portaMotorServo = 8;
 int portaBuzzer     = 7;
+int ledPortao       = A1;
 // Portas da shield de Ethernet: 2, 10, 11, 12, 13
 int estadobotao = LOW;
 int ultimoEstado = 0;
@@ -102,7 +103,7 @@ void tocaBuzzer(int portaBuzzer, int frequencia, int atrazo, int toques = 1 )
   }
 }
 
-void abreFechaPortao(int acao) 
+void abreFechaPortao(int acao) // Função que irá abrir ou fechar o botão, 1 para abrir 0 para fechar
 {
     if (ultimoEstado == 0 && acao == 1) {
       ultimoEstado = 1;
@@ -113,16 +114,16 @@ void abreFechaPortao(int acao)
         delay(15);
       }
       delay(1000);
-      //led
+      digitalWrite(ledPortao, HIGH);
     } else if(ultimoEstado == 1 && acao == 0) {
       ultimoEstado = 0;
       tocaBuzzer(portaBuzzer, 1500, 500, 3);
-      for (pos = 90; pos >= 0; pos--){
+      for (pos = 90; pos >= -10; pos--){
         motor.write(pos);
         delay(15);
       }
       delay(1000);
-      //led
+      digitalWrite(ledPortao, LOW);
     }
 }
 // ==========================================================================
@@ -134,6 +135,7 @@ void setup()
 
   // setup botao
   pinMode(portaBotao, INPUT);
+  pinMode(ledPortao, OUTPUT);
 
   // setup buzzer
   pinMode(portaBuzzer, OUTPUT);
@@ -153,7 +155,7 @@ void setup()
     ligaDesligaLedDigital(ledVerde, HIGH);
     
     // Envia uma mensagem para o cloud no topic portao
-    client.publish("Portao", 1);
+    //client.publish("Portao", 1);
     //client.publish("LuzGaragem", 1);
 
     // Conectando nos topics para receber as mensagens
@@ -172,8 +174,13 @@ void setup()
 void loop()
 {
   client.loop();
+  if (!client.connected()) {
+    desligaLedsRGB(ledAzul, ledVerde);
+    ligaDesligaLedDigital(ledVermelho, HIGH);
+  }
   Serial.println(client.connected());
   if (digitalRead(portaBotao) == HIGH) {
+    Serial.println("Botao clicado");
     if (ultimoEstado == 0) {
       abreFechaPortao(1);
     } else {
