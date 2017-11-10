@@ -6,11 +6,10 @@
 #include <PubSubClient.h>
 #include <Servo.h>
 // ==========================================================================
-byte mac[] = {0xDE, 0xED, 0xBA, 0xFE, 0xF1, 0x62};                                     // Definindo a variavel que recebe o mac address.
+byte mac[] = {0xDE, 0xED, 0xBA, 0xFE, 0xF1, 0x62}; // Definindo a variavel que recebe o mac address.
 // Definindo cabelahos de funções
 void callback(char *topic, byte *payload, unsigned int length);
 void ligaDesligaLedDigital(int porta, int acao, int atraso = 0, bool inverso = false);
-void verificaMesagem(char topic);
 // Definindo as variaveis que recebem alguma classe
 Servo motor;
 EthernetClient ethClient;
@@ -43,19 +42,12 @@ void callback(char *topic, byte *payload, unsigned int length)
   }
 
   if (strcmp(topic, "Portao") == 0) {
-    Serial.println("aqui2");
-    Serial.println(c);
-    if (c == '1') {
+    if (c == '1') { // Ação 1 para abrir o portão
       abreFechaPortao(1);
-    } else if(c == '0') {
+    } else if(c == '0') { // Ação 0 para fechar o portão
       abreFechaPortao(0);
     }
   }
-  //verificaMesagem(topic, c);
-  //if (strcmp(topic, "Portao") == 0) {
-  //  Serial.println("aqui2");
-  //  abreFechaPortao();
-  //}
 
   byte *p = (byte *)malloc(length);
   memcpy(p, payload, length);
@@ -81,19 +73,7 @@ void desligaLedsRGB(int param1, int param2) // Função para desligar duas cores
   digitalWrite(param2, LOW);
 }
 
-void verificaMesagem(char *topic, char *action) // Função que irá verificar a mensagem e topico digitado e tomas as devidas ações
-{
-  if (strcmp(topic, "Portao") == 0) {
-    Serial.println("aqui2");
-    Serial.println(action);
-    if (action == 1) {
-      abreFechaPortao(1);
-    }
-    //abreFechaPortao();
-  }
-}
-
-void tocaBuzzer(int portaBuzzer, int frequencia, int atrazo, int toques = 1 )
+void tocaBuzzer(int portaBuzzer, int frequencia, int atrazo, int toques = 1 ) // Função para ligar e desligar o buzzer
 {
   for(int i = 0; i < toques; i++) {
     tone(portaBuzzer,frequencia);   
@@ -149,18 +129,13 @@ void setup()
   Ethernet.begin(mac);
 
   // Faz a conexão no cloud com nome do dispositivo, usuário e senha respectivamente
-  if (client.connect("arduino", "test", "test"))
+  if (client.connect("arduino", "usuario", "senha"))
   {
     ligaDesligaLedDigital(ledAzul, LOW);
     ligaDesligaLedDigital(ledVerde, HIGH);
     
-    // Envia uma mensagem para o cloud no topic portao
-    //client.publish("Portao", 1);
-    //client.publish("LuzGaragem", 1);
-
     // Conectando nos topics para receber as mensagens
     client.subscribe("Portao");
-    //client.subscribe("LuzGaragem");
     
     Serial.println("conectado!!");
   }else{
@@ -178,7 +153,6 @@ void loop()
     desligaLedsRGB(ledAzul, ledVerde);
     ligaDesligaLedDigital(ledVermelho, HIGH);
   }
-  Serial.println(client.connected());
   if (digitalRead(portaBotao) == HIGH) {
     Serial.println("Botao clicado");
     if (ultimoEstado == 0) {
